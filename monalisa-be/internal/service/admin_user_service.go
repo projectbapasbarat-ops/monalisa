@@ -9,7 +9,11 @@ type AdminUserService struct {
 }
 
 func NewAdminUserService(u UserRepo, r RoleRepo, a AuditRepo) *AdminUserService {
-	return &AdminUserService{u, r, a}
+	return &AdminUserService{
+		userRepo:  u,
+		roleRepo:  r,
+		auditRepo: a,
+	}
 }
 
 func (s *AdminUserService) ListUsers() (interface{}, error) {
@@ -21,12 +25,41 @@ func (s *AdminUserService) AssignRole(actorID, userID, role string) error {
 	if err != nil || !ok {
 		return errors.New("role not found")
 	}
+
+	// === PRIMARY ACTION (WAJIB SUKSES) ===
 	if err := s.userRepo.AssignRole(userID, role); err != nil {
 		return err
 	}
-	return s.auditRepo.Log(actorID, "assign_role", role)
+
+	// === SECONDARY ACTION (TIDAK BOLEH GAGALKAN) ===
+	if s.auditRepo != nil {
+		_ = s.auditRepo.Log(
+			actorID,
+			"assign_role",
+			"user:"+userID+" role:"+role,
+		)
+	}
+
+	return nil
 }
 
 func (s *AdminUserService) RemoveRole(actorID, userID, role string) error {
-	return s.userRepo.RemoveRole(userID, role)
+	// proteksi admin-self
+	if actorID == userID && role == "admin" {
+		return errors.New("cannot remove admin role from yourself")
+	}
+
+	if err := s.userRepo.RemoveRole(userID, role); err != nil {
+		return err
+	}
+
+	if s.auditRepo != nil {
+		_ = s.auditRepo.Log(
+			actorID,
+			"remove_role",
+			"user:"+userID+" role:"+role,
+		)
+	}
+
+	return nil
 }

@@ -133,3 +133,28 @@ func (r *UserRepository) RemoveRole(userID, roleCode string) error {
 	}
 	return nil
 }
+
+func (r *UserRepository) GetPermissionsByUserID(userID string) ([]string, error) {
+	rows, err := r.DB.Query(`
+		SELECT DISTINCT p.code
+		FROM user_roles ur
+		JOIN role_permissions rp ON rp.role_id = ur.role_id
+		JOIN permissions p ON p.id = rp.permission_id
+		WHERE ur.user_id = $1
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var permissions []string
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		permissions = append(permissions, code)
+	}
+
+	return permissions, nil
+}

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import AdminMenu from "../components/AdminMenu";
+
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -7,6 +9,9 @@ export default function AdminUsers() {
   const [selectedRole, setSelectedRole] = useState({});
 
   const loadData = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) return;
+    
     const usersRes = await api.get("/admin/users");
     const rolesRes = await api.get("/admin/roles");
 
@@ -36,6 +41,7 @@ export default function AdminUsers() {
 
   return (
     <div style={{ padding: 40 }}>
+      <AdminMenu />
       <h2>Admin - Users</h2>
 
       <table border="1" cellPadding="8">

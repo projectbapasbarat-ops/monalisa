@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ func main() {
 	// =========================
 	// LOAD ENV
 	// =========================
+	_ = godotenv.Load()
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using system env")
 	}
@@ -68,6 +70,7 @@ func main() {
 	userRepo := &repository.UserRepository{DB: db}
 	roleRepo := &repository.RoleRepository{DB: db}
 	auditRepo := &repository.AuditRepository{DB: db}
+	tokenRepo := &repository.RefreshTokenRepository{DB: db}
 
 	// =========================
 	// SERVICES
@@ -83,14 +86,16 @@ func main() {
 	// =========================
 	// HANDLERS
 	// =========================
-	authHandler := handler.NewAuthHandler(userRepo)
+	authHandler := handler.NewAuthHandler(userRepo, tokenRepo)
 	adminUserHandler := handler.NewAdminUserHandler(adminUserService)
 	adminRoleHandler := handler.NewAdminRoleHandler(adminRoleService)
+	auditService := service.NewAuditService(auditRepo)
+	auditHandler := handler.NewAuditHandler(auditService)
 
 	// =========================
 	// PUBLIC ROUTES
 	// =========================
-	r.POST("/api/v1/auth/login", authHandler.Login)
+	//r.POST("/api/v1/auth/login", authHandler.Login)
 
 	// =========================
 	// PROTECTED ADMIN ROUTES
@@ -103,6 +108,15 @@ func main() {
 		admin.POST("/users/:id/roles", adminUserHandler.AssignRole)
 		admin.DELETE("/users/:id/roles/:role", adminUserHandler.RemoveRole)
 		admin.GET("/roles", adminRoleHandler.ListRoles)
+		admin.GET("/audit-logs", auditHandler.List)
+	}
+
+	auth := r.Group("/api/v1/auth")
+	auth.Use(middleware.RateLimit(5, time.Minute))
+	{
+		auth.POST("/login", authHandler.Login)
+		auth.POST("/refresh", authHandler.Refresh)
+		auth.POST("/logout", authHandler.Logout)
 	}
 
 	// =========================
