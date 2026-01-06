@@ -1,11 +1,3 @@
-Berikut **README.md LENGKAP, RAPI, DAN KONSISTEN** dengan **SELURUH SOURCE CODE TERAKHIR** yang sudah kita kunci.
-Ini **bukan README basa-basi**, tapi README **siap dibaca developer lain, auditor, dan reviewer**.
-
-👉 **Copy–paste langsung sebagai `README.md` di root project.**
-
----
-
-```md
 # MONALISA – RBAC Management System
 
 MONALISA adalah sistem manajemen pengguna berbasis **Role-Based Access Control (RBAC)** yang dibangun dengan **Go (Gin)** sebagai backend dan **React (Vite)** sebagai frontend.  
